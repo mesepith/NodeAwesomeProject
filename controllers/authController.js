@@ -1,5 +1,8 @@
 // controllers/authController.js
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = '1901'; // Keep this secret safe
+
 const { createUser, findUserByEmail } = require('../models/userModel');
 
 exports.register = async (req, res) => {
@@ -15,11 +18,15 @@ exports.register = async (req, res) => {
   }
 };
 
+
 exports.login = async (req, res) => {
   try {
     const user = await findUserByEmail(req.body.email);
     if (user && await bcrypt.compare(req.body.password, user.password)) {
-      res.status(200).json({ message: 'Login successful', userId: user.id, name: user.name });
+      // Generate JWT token
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+
+      res.json({ message: 'Login successful', token, name: user.name });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -27,3 +34,9 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.protectedRoute = (req, res) => {
+  console.log('Access to protected route granted');
+  res.json({ message: 'Access to protected route granted' });
+};
+
